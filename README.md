@@ -234,4 +234,4 @@ The generated dataset comes with comprehensive analysis visuals in the `analysis
 
 All visualizations are generated automatically with the dataset and can be reproduced using the included analysis scripts.
 ### Times to generate data
-![Times](data_generator/analysis_results/benckmark.png)
+![Times](data_generator/analysis_results/benchmark.png)
