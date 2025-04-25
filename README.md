@@ -191,47 +191,47 @@ TOTAL                                        231     19    92%
 The generated dataset comes with comprehensive analysis visuals in the `analysis_results` directory:
 
 ### Key Distributions
-![Brand Distribution](analysis_results/bar_brand.png) 
-![Vehicle Types](analysis_results/bar_vehicle_type.png)
-![Fuel Types](analysis_results/pie_fuel_type.png)
-![Emission Standards](analysis_results/bar_emission_standard.png)
+![Brand Distribution](data_generator/analysis_results/bar_brand.png) 
+![Vehicle Types](data_generator/analysis_results/bar_vehicle_type.png)
+![Fuel Types](data_generator/analysis_results/pie_fuel_type.png)
+![Emission Standards](data_generator/analysis_results/bar_emission_standard.png)
 
 ### Geographical Analysis
-![Department Distribution](analysis_results/geo_departments.png)
-![Vehicle Type by Region](analysis_results/geo_vehicle_types.png)
+![Department Distribution](data_generator/analysis_results/geo_departments.png)
+![Vehicle Type by Region](data_generator/analysis_results/geo_vehicle_types.png)
 
 ### Technical Specifications
 **Engine Displacement**  
-![Engine Sizes](analysis_results/hist_engine_displacement.png)
+![Engine Sizes](data_generator/analysis_results/hist_engine_displacement.png)
 
 **Weight Distribution**  
-![Vehicle Weights](analysis_results/hist_weight_kg.png)
+![Vehicle Weights](data_generator/analysis_results/hist_weight_kg.png)
 
 **Mileage Analysis**  
-![Mileage Distribution](analysis_results/hist_mileage_km.png)
+![Mileage Distribution](data_generator/analysis_results/hist_mileage_km.png)
 
 ### Market Trends
 **Price Distribution**  
-![Price Ranges](analysis_results/hist_price_cop.png)
+![Price Ranges](data_generator/analysis_results/hist_price_cop.png)
 
 **Depreciation Curves**  
-![Value Depreciation](analysis_results/depreciation_curves.png)
+![Value Depreciation](data_generator/analysis_results/depreciation_curves.png)
 
 **Vehicle Age Distribution**  
-![Production Years](analysis_results/hist_year.png)
+![Production Years](data_generator/analysis_results/hist_year.png)
 
 ### Feature Correlations
-![Attribute Correlations](analysis_results/correlation_matrix.png)
+![Attribute Correlations](data_generator/analysis_results/correlation_matrix.png)
 
 ### Detailed Breakdowns
 | Body Types | Colors | Seating Capacity |
 |------------|--------|------------------|
-| ![Body Types](analysis_results/pie_body_type.png) | ![Colors](analysis_results/pie_color.png) | ![Seats](analysis_results/hist_seats.png) |
+| ![Body Types](data_generator/analysis_results/pie_body_type.png) | ![Colors](data_generator/analysis_results/pie_color.png) | ![Seats](data_generator/analysis_results/hist_seats.png) |
 
 | Municipal Distribution | Model Popularity |
 |-------------------------|------------------|
-| ![Municipalities](analysis_results/bar_municipality.png) | ![Models](analysis_results/bar_model.png) |
+| ![Municipalities](data_generator/analysis_results/bar_municipality.png) | ![Models](data_generator/analysis_results/bar_model.png) |
 
 All visualizations are generated automatically with the dataset and can be reproduced using the included analysis scripts.
 ### Times to generate data
-![Times](analysis_results/benckmark.png)
+![Times](data_generator/analysis_results/benckmark.png)
