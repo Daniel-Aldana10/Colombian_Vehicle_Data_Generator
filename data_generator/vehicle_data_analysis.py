@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from pathlib import Path
@@ -10,22 +9,9 @@ import argparse
 
 
 class VehicleDataAnalyzer:
-    """
-    Analyzer for Colombian vehicle synthetic data.
-    Creates visualizations to understand data distributions and correlations.
-    """
 
     def __init__(self, csv_path, output_dir="analysis_results"):
-        """
-        Initialize the analyzer with data file path and output directory.
 
-        Parameters:
-        -----------
-        csv_path : str
-            Path to the CSV file containing vehicle data
-        output_dir : str
-            Directory to save visualization outputs
-        """
         self.df = pd.read_csv(csv_path)
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(exist_ok=True, parents=True)
@@ -125,7 +111,7 @@ class VehicleDataAnalyzer:
         """Create correlation heatmap for numeric variables"""
         numeric_cols = [
             'year', 'engine_displacement', 'doors', 'seats', 'wheels',
-            'weight_kg', 'mileage_km', 'price_cop', 'airbags'
+            'weight_kg', 'mileage_km', 'price_cop', 'airbags',  'horsepower_hp', 'weight_capacity_kg'
         ]
 
         # Only include columns that exist in the dataframe
@@ -236,6 +222,20 @@ class VehicleDataAnalyzer:
         ax.set_ylabel('Year')
         plt.xticks(rotation=45, ha='right')
         self.save_fig(fig, 'violin_year_brand.png')
+        # 7. Engine displacement vs Price
+        fig, ax = plt.subplots(figsize=(10, 6))
+        sns.regplot(
+            x='engine_displacement',
+            y='price_cop',
+            data=self.df,
+            scatter_kws={'alpha': 0.5},
+            line_kws={'color': 'red'},
+            ax=ax
+        )
+        ax.set_title('Price vs. Engine Displacement')
+        ax.set_xlabel('Engine Displacement (L)')
+        ax.set_ylabel('Price (COP)')
+        self.save_fig(fig, 'scatter_price_engine.png')
 
     def analyze_depreciation(self):
         """Analyze vehicle depreciation patterns"""
@@ -365,7 +365,7 @@ class VehicleDataAnalyzer:
         self.save_fig(fig, 'dashboard_summary.png')
 
     def run_all_analyses(self):
-        """Run all analysis methods"""
+
         print("Starting analysis of vehicle data...")
         self.analyze_categorical_distributions()
         self.analyze_numeric_distributions()
@@ -378,12 +378,11 @@ class VehicleDataAnalyzer:
 
 
 def main():
-    """Main function to parse arguments and run analysis"""
     parser = argparse.ArgumentParser(description='Analyze Colombian Vehicle Dataset')
     parser.add_argument(
         '-i', '--input',
         type=str,
-        default='vehicle_data.csv',
+        default='../vehicle_data.csv',
         help='Input CSV file path'
     )
     parser.add_argument(

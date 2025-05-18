@@ -61,43 +61,47 @@ python app.py -n 5000 -b -s 1000
 ```
 
 ## Data Dictionary
+| Field                 | Type   | Description                         | Example               | Generation Logic                                                                                                         |
+| --------------------- | ------ | ----------------------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `vehicle_id`          | string | Unique vehicle ID                   | `"a5b8c2d1-..."`      | Generated as a UUID4 to ensure global uniqueness.                                                                        |
+| `vin`                 | string | Vehicle Identification Number       | `"3VWFE21C04M000283"` | Uniform random 17-character string matching VIN format (alphanumeric, uppercase, excluding I/O/Q).                       |
+| `chassis_number`      | string | Chassis number                      | `"8AF5XXBDJ5M"`       | Uniform random alphanumeric string of length 10–12.                                                                      |
+| `engine_number`       | string | Engine number                       | `"B4204T31"`          | Uniform random uppercase alphanumeric, length 6–8.                                                                       |
+| `license_plate`       | string | License plate                       | `"ABC 123"`           | Uniform random: 3 letters, space, 3 digits (reflecting Colombian formatting rules).                                      |
+| `department`          | string | Registration department             | `"Cundinamarca"`      | Uniform random pick from list of Colombia’s 32 departments.                                                              |
+| `municipality`        | string | Registration municipality           | `"Bogotá"`            | Uniform random pick from municipalities within the chosen `department` (dependency).                                     |
+| `brand`               | string | Vehicle make                        | `"Renault"`           | Weighted random: brands sampled with realistic market-share weights (e.g., Renault, Chevrolet, Mazda, etc.).             |
+| `model`               | string | Vehicle model                       | `"Sandero"`           | Weighted random: model chosen conditional on `brand` (each brand has its own model list and weights).                    |
+| `year`                | int    | Manufacturing year                  | `2018`                | Uniform random integer between 1990 and current year (2025), optionally skewed toward newer years.                       |
+| `color`               | string | Vehicle color                       | `"White"`             | Weighted random: common colors (White, Black, Silver, Blue, Red, etc.) with higher weights for popular choices.          |
+| `body_type`           | string | Body style                          | `"Hatchback"`         | Weighted random among body types (Sedan, Hatchback, SUV, Pickup, Van, etc.) using market-distribution weights.           |
+| `vehicle_type`        | string | Usage category                      | `"particular"`        | Uniform random among categories {`particular`, `public`, `cargo`, `special`}.                                            |
+| `fuel_type`           | string | Fuel type                           | `"Gasoline"`          | Weighted random among {Gasoline, Diesel, Hybrid, Electric, LPG} based on Colombian fleet percentages.                    |
+| `engine_displacement` | float  | Engine displacement (L)             | `1.6`                 | Weighted random: choose from common displacements (e.g., 1.0, 1.2, 1.4, 1.6, 2.0, 2.5, etc.) with realistic frequencies. |
+| `doors`               | int    | Number of doors                     | `5`                   | Uniform random pick from {2, 3, 4, 5} (with heavier weight on 4 and 5).                                                  |
+| `seats`               | int    | Number of seats                     | `5`                   | Uniform random pick from {2, 4, 5, 7} with weight toward 5.                                                              |
+| `wheels`              | int    | Number of wheels                    | `4`                   | Uniform random from {2, 3, 4, 6, 8}, but default = 4 for most passenger vehicles.                                        |
+| `weight_kg`           | int    | Curb weight (kg)                    | `1200`                | Uniform random between 800 and 3500 kg according to `body_type` buckets (e.g., SUVs heavier than hatchbacks).            |
+| `mileage_km`          | int    | Mileage (km)                        | `45000`               | Uniform random based on `year` (older → higher max mileage), e.g. 0–(current\_year–year)\*20 000 km.                     |
+| `price_cop`           | int    | Price in COP                        | `35000000`            | Uniform random with dependency on `year`, `brand`, `model` and `mileage_km` using a simple depreciation formula.         |
+| `emission_standard`   | string | Emission standard                   | `"Euro 4"`            | Uniform random chosen from {`Euro 2`, `Euro 3`, `Euro 4`, `Euro 5`, `Euro 6`} based on `year`.                           |
+| `abs`                 | bool   | Anti-lock braking system            | `true`                | Uniform random with higher probability for newer `year` (e.g., P(abs = true) = min(1, (year–1990)/50)).                  |
+| `airbags`             | int    | Number of airbags                   | `2`                   | Uniform random but weighted by `year` (older cars fewer airbags).                                                        |
+| `esp`                 | bool   | Electronic stability control        | `false`               | Uniform random with probability increasing for `year` ≥ 2010 (e.g., 30% for 2010–2015, 70% for >2015).                   |
+| `seatbelts`           | int    | Number of seatbelts                 | `5`                   | Uniform random = `seats` (1 belt per seat) with possible extras for center-seat lap belts.                               |
+| `soat_policy`         | string | SOAT policy number                  | `"SOAT-12345"`        | Uniform random string with prefix “SOAT-” plus 5–6 digit code.                                                           |
+| `soat_validity`       | date   | SOAT expiration date                | `"2023-05-15"`        | Uniform random date: between `registration_date` and `registration_date + 1 year`.                                       |
+| `techinsp_date`       | date   | Last technical inspection date      | `"2022-07-20"`        | Uniform random date: ≤ today, ≥ `registration_date`.                                                                     |
+| `techinsp_result`     | string | Inspection result                   | `"Approved"`          | Uniform random among {`Approved`, `Rejected`} with high approval rate (>90%).                                            |
+| `techinsp_validity`   | date   | Inspection validity end date        | `"2024-07-20"`        | = `techinsp_date + 1 year`.                                                                                              |
+| `fur_code`            | string | FUR inspection code                 | `"FUR-123456"`        | Uniform random string with prefix “FUR-” plus 6-digit code.                                                              |
+| `registration_date`   | date   | Initial registration date           | `"2018-03-10"`        | Uniform random date between `year-01-01` and today.                                                                      |
+| `status`              | string | Vehicle status                      | `"Used"`              | Uniform random among {`New`, `Used`, `Suspended`, `Confiscated`}, with higher weight for `Used`.                         |
+| `weight_capacity_kg`  | int    | Maximum load capacity (kg)          | `1440`                | Computed as 1.2 × `weight_kg` for cargo vehicles, or default = `weight_kg + 200` for passenger vehicles.                 |
+| `seated_capacity`     | int    | Passenger seating capacity          | `5`                   | = `seats`.                                                                                                               |
+| `standing_capacity`   | int    | Allowed standing passenger capacity | `0`                   | For public service vehicles only: uniform random between 0 and 10; otherwise 0.                                          |
+| `horsepower_hp`       | int    | Engine power (HP)                   | `120`                 | Weighted random based on `engine_displacement` (e.g., 1.6 L → 100–120 HP, 2.0 L → 130–160 HP) with some variance.        |
 
-| Field | Type | Description | Example |
-|-------|------|-------------|---------|
-| vehicle_id | string | Unique vehicle ID | "a5b8c2d1-..." |
-| vin | string | Vehicle Identification Number | "3VWFE21C04M000283" |
-| chassis_number | string | Chassis number | "8AF5XXBDJ5M" |
-| engine_number | string | Engine number | "B4204T31" |
-| license_plate | string | Vehicle license plate | "ABC 123" |
-| department | string | Registration department | "Cundinamarca" |
-| municipality | string | Registration municipality | "Bogotá" |
-| brand | string | Vehicle make | "Renault" |
-| model | string | Vehicle model | "Sandero" |
-| year | int | Manufacturing year | 2018 |
-| color | string | Vehicle color | "White" |
-| body_type | string | Body type | "Hatchback" |
-| vehicle_type | string | Vehicle type | "particular" |
-| fuel_type | string | Fuel type | "Gasoline" |
-| engine_displacement | float | Engine displacement | 1.6 |
-| doors | int | Number of doors | 5 |
-| seats | int | Number of seats | 5 |
-| wheels | int | Number of wheels | 4 |
-| weight_kg | int | Weight in kilograms | 1200 |
-| mileage_km | int | Mileage | 45000 |
-| price_cop | int | Price in Colombian pesos | 35000000 |
-| emission_standard | string | Emission standard | "Euro 4" |
-| abs | bool | Anti-lock braking system | true |
-| airbags | int | Number of airbags | 2 |
-| esp | bool | Electronic stability control | false |
-| seatbelts | int | Number of seatbelts | 5 |
-| soat_policy | string | SOAT policy number | "SOAT-12345" |
-| soat_validity | date | SOAT validity date | "2023-05-15" |
-| techinsp_date | date | Technical inspection date | "2022-07-20" |
-| techinsp_result | string | Inspection result | "Approved" |
-| techinsp_validity | date | Inspection validity | "2024-07-20" |
-| fur_code | string | FUR code | "FUR-123456" |
-| registration_date | date | Registration date | "2018-03-10" |
-| status | string | Vehicle status | "Used" |
 
 ## Sample Data
 
