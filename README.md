@@ -239,37 +239,36 @@ The generated dataset comes with comprehensive analysis visuals in the `analysis
 All visualizations are generated automatically with the dataset and can be reproduced using the included analysis scripts.
 ### Times to generate data
 ![Times](data_generator/analysis_results/benchmark.png)
-
 ## Changelog
 ### New Attributes
-weight_capacity_kg: Maximum load capacity, computed based on weight_kg and vehicle_type.
+* weight_capacity_kg: Maximum load capacity, computed based on weight_kg and vehicle_type.
 
-seated_capacity: Number of passengers that can be seated (equal to seats).
+* seated_capacity: Number of passengers that can be seated (equal to seats).
 
-standing_capacity: Standing passenger capacity, used only for public service vehicles.
+* standing_capacity: Standing passenger capacity, used only for public service vehicles.
 
-horsepower_hp: Estimated engine power, sampled based on engine_displacement.
+* horsepower_hp: Estimated engine power, sampled based on engine_displacement.
 
-These attributes help simulate vehicle usage in logistics, public transport, and performance scenarios.
+* These attributes help simulate vehicle usage in logistics, public transport, and performance scenarios.
 
-Price Distribution & Visualization Enhancements
-Revised price generation:
+## Price Distribution & Visualization Enhancements
+* Revised price generation:
 
-Takes into account year, mileage_km, and engine_displacement.
+   * Takes into account year, mileage_km, and engine_displacement.
 
-Uses brand-specific depreciation rates to simulate realistic market values.
+   * Uses brand-specific depreciation rates to simulate realistic market values.
 
-New analysis plots added:
+* New analysis plots added:
 
-Year vs. Price: shows how vehicle age impacts value.
+    * Year vs. Price: shows how vehicle age impacts value.
 
-Engine Displacement vs. Price: explores how engine size correlates with cost.
+    * Engine Displacement vs. Price: explores how engine size correlates with cost.
 
 These graphs are included in the analysis_results folder and are auto-generated during data analysis.
 
-Uniqueness Control
+## Uniqueness Control
 To ensure realistic data integrity:
 
-License plates (license_plate) and SOAT policies (soat_policy) are now enforced to be unique.
+* License plates (license_plate) and SOAT policies (soat_policy) are now enforced to be unique.
 
-This is implemented using a Scalable Bloom Filter for efficient memory-safe uniqueness validation when generating millions of records.
+* This is implemented using a Scalable Bloom Filter for efficient memory-safe uniqueness validation when generating millions of records.
