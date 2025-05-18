@@ -5,7 +5,6 @@ from datetime import datetime, timedelta
 import numpy as np
 import pandas as pd
 from faker import Faker
-from pybloom_live import ScalableBloomFilter
 import argparse
 
 # Initialize Faker for Colombian locale
@@ -110,26 +109,57 @@ def determine_status(year: int, tech_res: str, soat_vig: datetime) -> str:
     return random.choices(pool, weights=norm, k=1)[0]
 
 
-def generate_plate(vehicle_type: str) -> str:
+def generate_deterministic_plate(index: int, vehicle_type: str) -> str:
+    """
+    Generates a license plate deterministically based on the index
+    """
     if vehicle_type in ['particular', 'servicio_publico']:
-        letters = ''.join(random.choices('ABCDEFGHIJKLMNOPQRSTUVWXYZ', k=3))
-        numbers = ''.join(random.choices('0123456789', k=3))
+        # use 3 letters (26^3 = 17,576 combinations) and 3 numbers (1000 combinations)
+        # This gives us 17,576,000 possible unique plates
+        letter_index = index % (26**3)
+        letters = ''
+        for _ in range(3):
+            letters = chr(65 + (letter_index % 26)) + letters
+            letter_index //= 26
+        
+        numbers = f"{index % 1000:03d}"
         return f"{letters} {numbers}"
+    
     if vehicle_type == 'diplomatico':
-        code = random.choice(['D', 'C', 'M', 'O', 'A'])
-        letter = random.choice('ABCDEFGHIJKLMNOPQRSTUVWXYZ')
-        numbers = ''.join(random.choices('0123456789', k=4))
+        # Diplomatic codes: 5 options for the first character
+        code = ['D', 'C', 'M', 'O', 'A'][index % 5]
+        letter_index = (index // 5) % 26
+        letter = chr(65 + letter_index)
+        numbers = f"{(index // (5 * 26)) % 10000:04d}"
         return f"{code}{letter} {numbers}"
+    
     if vehicle_type == 'remolque':
-        code = random.choice(['R', 'S'])
-        numbers = ''.join(random.choices('0123456789', k=5))
+        code = ['R', 'S'][index % 2]
+        numbers = f"{(index // 2) % 100000:05d}"
         return f"{code} {numbers}"
+    
     if vehicle_type == 'carga_especial':
-        numbers = ''.join(random.choices('0123456789', k=4))
+        numbers = f"{index % 10000:04d}"
         return f"T {numbers}"
-    letters = ''.join(random.choices('ABCDEFGHIJKLMNOPQRSTUVWXYZ', k=3))
-    numbers = ''.join(random.choices('0123456789', k=3))
+    
+    # Fallback for other types (similar to private vehicles)
+    letter_index = index % (26**3)
+    letters = ''
+    for _ in range(3):
+        letters = chr(65 + (letter_index % 26)) + letters
+        letter_index //= 26
+    
+    numbers = f"{index % 1000:03d}"
     return f"{letters} {numbers}"
+
+
+def generate_deterministic_soat(index: int) -> tuple:
+    """
+    Generates a unique SOAT policy number based on the index
+    """
+    policy = f"SOAT-{index:07d}"
+    validity = fake.date_between(start_date='-1y', end_date='+1y')
+    return policy, validity
 
 
 def generate_color(brand: str) -> str:
@@ -175,12 +205,6 @@ def assign_safety_features(year: int, seats: int, vehicle_type: str):
     esp = year >= 2015 or (vehicle_type == 'servicio_publico' and year >= 2020)
     seatbelts = seats
     return abs_system, airbags, esp, seatbelts
-
-
-def generate_soat() -> tuple:
-    validity = fake.date_between(start_date='-1y', end_date='+1y')
-    policy = fake.bothify('SOAT-#####')
-    return policy, validity
 
 
 def generate_tech_inspection(vehicle_type: str):
@@ -269,7 +293,10 @@ def assign_fuel_type(vehicle_type: str) -> str:
 # Vehicle Generation
 # =========================
 
-def generate_vehicle(sub_type: str, plate_filter, soat_filter, max_retries=1000) -> dict:
+def generate_vehicle(index: int, sub_type: str = None) -> dict:
+    """
+    Generates a vehicle with unique identifiers based on the index
+    """
     brand = random.choices(BRANDS, weights=BRANDS_WEIGHTS, k=1)[0]
     model = random.choices(MODELS[brand], weights=MODELS_WEIGHTS.get(brand, [1] * len(MODELS[brand])), k=1)[0]
     year = random.randint(2000, datetime.now().year)
@@ -292,31 +319,9 @@ def generate_vehicle(sub_type: str, plate_filter, soat_filter, max_retries=1000)
     engine_disp = assign_engine_displacement(vehicle_type)
     fuel = assign_fuel_type(vehicle_type)
 
-    retry_count = 0
-    plate = generate_plate(vehicle_type)
-    while plate in plate_filter:
-        plate = generate_plate(vehicle_type)
-        retry_count += 1
-        if retry_count >= max_retries:
-
-            if vehicle_type in ['particular', 'servicio_publico']:
-                letters = ''.join(random.choices('ABCDEFGHIJKLMNOPQRSTUVWXYZ', k=3))
-                numbers = f"{random.randint(0, 999999):06d}"
-                plate = f"{letters} {numbers[:3]}"
-            break
-    plate_filter.add(plate)
-
-
-    retry_count = 0
-    soat_pol, soat_vig = generate_soat()
-    while soat_pol in soat_filter:
-        soat_pol, soat_vig = generate_soat()
-        retry_count += 1
-        if retry_count >= max_retries:
-
-            soat_pol = f"SOAT-{random.randint(0, 9999999):07d}"
-            break
-    soat_filter.add(soat_pol)
+    # Deterministic generation of plate and SOAT based on index
+    plate = generate_deterministic_plate(index, vehicle_type)
+    soat_pol, soat_vig = generate_deterministic_soat(index)
 
     capacity_data = ADDITIONAL_CAPACITIES.get(vehicle_type, {})
     weight_capacity = int(weight * capacity_data.get('weight_capacity', 1.2))
@@ -368,77 +373,65 @@ def generate_vehicle(sub_type: str, plate_filter, soat_filter, max_retries=1000)
     }
 
 
-def generate_dataset(n: int, output_path: str, sub_type: str = None, monitor_memory: bool = False) -> None:
-    plate_filter = ScalableBloomFilter(initial_capacity=10_000_000, error_rate=0.01, mode=ScalableBloomFilter.LARGE_SET_GROWTH)
-    soat_filter = ScalableBloomFilter(initial_capacity=10_000_000, error_rate=0.01, mode=ScalableBloomFilter.LARGE_SET_GROWTH)
+def generate_dataset(n: int, output_path: str, sub_type: str = None) -> None:
+    """
+    Generates a vehicle dataset with deterministic generation to ensure uniqueness
+    """
     start_time = time.time()
     last_report_time = start_time
     total_records_generated = 0
 
+    # Determine optimal chunk size
     if n > 1_000_000:
         chunk_size = 50_000
     elif n > 100_000:
         chunk_size = 20_000
     else:
         chunk_size = min(10_000, n)
-
+    
     print(f"Starting generation of {n:,} records...")
-    print(f"BloomFilter configured with error_rate={0.01} and initial capacity={10_000_000:,}")
-
+    
+    # Simple sequential approach with deterministic generation
     for chunk_idx in range(0, n, chunk_size):
         current_chunk = min(chunk_size, n - chunk_idx)
-
-
+        
+        # Show progress at the beginning of each chunk
         percentage = (chunk_idx / n) * 100 if n > 0 else 0
         current_time = time.time()
         elapsed = current_time - start_time
-
+        
         if current_time - last_report_time >= 2 or chunk_idx == 0:
             if total_records_generated > 0:
                 records_per_second = total_records_generated / elapsed
                 print(f"progress: {total_records_generated:,}/{n:,} records ({percentage:.1f}%) - "
-                      f"speed: {records_per_second:.1f} reg/s - ")
+                      f"speed: {records_per_second:.1f} reg/s")
             last_report_time = current_time
-
-
+        
+        # Generate records for this chunk
         records = []
-
-
         for i in range(current_chunk):
-
-            if (total_records_generated + i) % 1000 == 0 and i > 0:
+            idx = chunk_idx + i
+            veh = generate_vehicle(idx, sub_type)
+            records.append(veh)
+            
+            # Update progress periodically
+            if (total_records_generated + i + 1) % 1000 == 0:
                 current_time = time.time()
                 if current_time - last_report_time >= 2:
-                    percentage = ((chunk_idx + i) / n) * 100 if n > 0 else 0
+                    percentage = ((chunk_idx + i + 1) / n) * 100
                     elapsed = current_time - start_time
-                    records_per_second = (total_records_generated + i) / elapsed if elapsed > 0 else 0
-                    print(f"progress: {total_records_generated + i:,}/{n:,} records ({percentage:.1f}%) - "
-                          f"speed: {records_per_second:.1f} reg/s - ")
-
+                    records_per_second = (total_records_generated + i + 1) / elapsed if elapsed > 0 else 0
+                    print(f"progress: {total_records_generated + i + 1:,}/{n:,} records ({percentage:.1f}%) - "
+                          f"speed: {records_per_second:.1f} reg/s")
                     last_report_time = current_time
-
-
-                    if monitor_memory:
-                        print(f"Stats del BloomFilter - Plates: {len(plate_filter.filters):,} filters, "
-                              f"SOAT: {len(soat_filter.filters):,} filters")
-
-
-            veh = generate_vehicle(sub_type, plate_filter, soat_filter, max_retries=100)
-            records.append(veh)
-
-
+        
+        # Convert to DataFrame and save
         df = pd.DataFrame(records)
-
-
         mode = 'w' if chunk_idx == 0 else 'a'
         header = (chunk_idx == 0)
-
-
         df.to_csv(output_path, mode=mode, header=header, index=False)
-
-
+        
         total_records_generated += len(records)
-
 
     total_time = time.time() - start_time
     records_per_second = n / total_time if total_time > 0 else 0
@@ -448,12 +441,6 @@ def generate_dataset(n: int, output_path: str, sub_type: str = None, monitor_mem
     print(f"total time: {total_time:.2f} seconds")
     print(f"average speed: {records_per_second:.1f} records/second")
     print(f"file save in: {output_path}")
-
-
-    if monitor_memory:
-        print(f"\nfinal BloomFilter statistics:")
-        print(f"- Placas: {len(plate_filter.filters):,} filters")
-        print(f"- SOAT: {len(soat_filter.filters):,} filters")
 
 # =========================
 # Command–Line Interface
@@ -468,7 +455,11 @@ def main():
     parser.add_argument('-t', '--type', type=str, default=None, choices=VEHICLE_TYPES, help='Vehicle type filter')
     args = parser.parse_args()
 
-    generate_dataset(n=args.rows, output_path=args.output, sub_type=args.type)
+    generate_dataset(
+        n=args.rows, 
+        output_path=args.output, 
+        sub_type=args.type
+    )
     print(f'Generation completed: {args.rows} records in {args.output}')
 
 

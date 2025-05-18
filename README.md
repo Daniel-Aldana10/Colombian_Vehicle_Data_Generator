@@ -41,10 +41,7 @@ The following Python libraries are required to run this project:
 from data_generator.vehicle_data_generator import generate_dataset
 
 # Generate a dataset of 1000 vehicles
-df = generate_dataset(n=1000)
-
-# Export to CSV
-df.to_csv('colombia_vehicles.csv', index=False)
+generate_dataset(n=1000, output_path='colombia_vehicles.csv')
 ```
 
 ### Command Line Usage
@@ -67,8 +64,8 @@ python app.py -n 5000 -b -s 1000
 | `vin`                 | string | Vehicle Identification Number       | `"3VWFE21C04M000283"` | Uniform random 17-character string matching VIN format (alphanumeric, uppercase, excluding I/O/Q).                       |
 | `chassis_number`      | string | Chassis number                      | `"8AF5XXBDJ5M"`       | Uniform random alphanumeric string of length 10–12.                                                                      |
 | `engine_number`       | string | Engine number                       | `"B4204T31"`          | Uniform random uppercase alphanumeric, length 6–8.                                                                       |
-| `license_plate`       | string | License plate                       | `"ABC 123"`           | Uniform random: 3 letters, space, 3 digits (reflecting Colombian formatting rules).                                      |
-| `department`          | string | Registration department             | `"Cundinamarca"`      | Uniform random pick from list of Colombia’s 32 departments.                                                              |
+| `license_plate`       | string | License plate                       | `"ABC 123"`           | Deterministically generated based on index to ensure uniqueness.                                      |
+| `department`          | string | Registration department             | `"Cundinamarca"`      | Uniform random pick from list of Colombia's 32 departments.                                                              |
 | `municipality`        | string | Registration municipality           | `"Bogotá"`            | Uniform random pick from municipalities within the chosen `department` (dependency).                                     |
 | `brand`               | string | Vehicle make                        | `"Renault"`           | Weighted random: brands sampled with realistic market-share weights (e.g., Renault, Chevrolet, Mazda, etc.).             |
 | `model`               | string | Vehicle model                       | `"Sandero"`           | Weighted random: model chosen conditional on `brand` (each brand has its own model list and weights).                    |
@@ -89,12 +86,12 @@ python app.py -n 5000 -b -s 1000
 | `airbags`             | int    | Number of airbags                   | `2`                   | Uniform random but weighted by `year` (older cars fewer airbags).                                                        |
 | `esp`                 | bool   | Electronic stability control        | `false`               | Uniform random with probability increasing for `year` ≥ 2010 (e.g., 30% for 2010–2015, 70% for >2015).                   |
 | `seatbelts`           | int    | Number of seatbelts                 | `5`                   | Uniform random = `seats` (1 belt per seat) with possible extras for center-seat lap belts.                               |
-| `soat_policy`         | string | SOAT policy number                  | `"SOAT-12345"`        | Uniform random string with prefix “SOAT-” plus 5–6 digit code.                                                           |
+| `soat_policy`         | string | SOAT policy number                  | `"SOAT-12345"`        | Deterministically generated based on index to ensure uniqueness.                                           |
 | `soat_validity`       | date   | SOAT expiration date                | `"2023-05-15"`        | Uniform random date: between `registration_date` and `registration_date + 1 year`.                                       |
 | `techinsp_date`       | date   | Last technical inspection date      | `"2022-07-20"`        | Uniform random date: ≤ today, ≥ `registration_date`.                                                                     |
 | `techinsp_result`     | string | Inspection result                   | `"Approved"`          | Uniform random among {`Approved`, `Rejected`} with high approval rate (>90%).                                            |
 | `techinsp_validity`   | date   | Inspection validity end date        | `"2024-07-20"`        | = `techinsp_date + 1 year`.                                                                                              |
-| `fur_code`            | string | FUR inspection code                 | `"FUR-123456"`        | Uniform random string with prefix “FUR-” plus 6-digit code.                                                              |
+| `fur_code`            | string | FUR inspection code                 | `"FUR-123456"`        | Uniform random string with prefix "FUR-" plus 6-digit code.                                                              |
 | `registration_date`   | date   | Initial registration date           | `"2018-03-10"`        | Uniform random date between `year-01-01` and today.                                                                      |
 | `status`              | string | Vehicle status                      | `"Used"`              | Uniform random among {`New`, `Used`, `Suspended`, `Confiscated`}, with higher weight for `Used`.                         |
 | `weight_capacity_kg`  | int    | Maximum load capacity (kg)          | `1440`                | Computed as 1.2 × `weight_kg` for cargo vehicles, or default = `weight_kg + 200` for passenger vehicles.                 |
@@ -269,6 +266,8 @@ These graphs are included in the analysis_results folder and are auto-generated 
 ## Uniqueness Control
 To ensure realistic data integrity:
 
-* License plates (license_plate) and SOAT policies (soat_policy) are now enforced to be unique.
+* License plates (license_plate) and SOAT policies (soat_policy) are now guaranteed to be unique.
 
-* This is implemented using a Scalable Bloom Filter for efficient memory-safe uniqueness validation when generating millions of records.
+* This is implemented using a deterministic generation approach where each vehicle's identifying information is based on its unique index, eliminating the need for runtime uniqueness checking and improving performance for large datasets.
+
+* The deterministic approach enables generation of millions of records with guaranteed uniqueness while maintaining realistic data patterns based on Colombian vehicle registration standards.
